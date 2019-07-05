@@ -1,0 +1,14 @@
+.idea/
+node_modules/
+app/front/.env
+app/**/Dockerfile
+app/**/docker_image_build_and_push.sh
+app/**/target/*
+!app**/target/*.jar
+/infrastructure/
+kubeconfig
+*.pem
+.terraform/
+.terraform*
+terraform.tfvars
+terraform.tfstate*
