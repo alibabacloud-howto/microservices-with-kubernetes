@@ -26,7 +26,9 @@ The goal of this tutorial is to explain how to create a microservice with Kubern
 
 Through this tutorial, we will create a small microservice on a Kubernetes cluster step by step. First, create a Kubernetes cluster on Alibaba Cloud with [Terraform](https://www.terraform.io/). Then, create application docker images on [Container Registry](https://www.alibabacloud.com/help/doc-detail/60945.htm), which is a container image hosting service in Alibaba Cloud, and deploy applications to the Kubernetes cluster. Farthermore, we will integrate [Istio](https://istio.io/) to the cluster and enrich the microservice. To focus on microeservice infrastructure construction, we will use the prepared sample applications in this repository, which contains a front-end web application, a back-end web API application, and a database API application. After completing this tutorial, you will know how to use Alibaba Cloud Container Service and common used container technologies.
 
-The following figure shows the architecture of the microservice which we will create in this tutorial.
+The *samples* directory in this repository shows sample configuration files in this tutorial as reference.
+
+The following figure shows the architecture of the microservice created in this tutorial.
 ![images/kiali_console.png](images/kiali_console.png)
 
 
@@ -2499,7 +2501,7 @@ mkdir -p infrastructure/kubernetes/grafana/ && cd $_
 
 # Integrate Grafana to Istio
 helm template --set grafana.enabled=true ../../istio/istio-1.2.2/install/kubernetes/helm/istio --name istio --namespace istio-system > grafana-enabled-istio.yml
-kc apply -f grafana-enabled-istio.yml
+kubectl apply -f grafana-enabled-istio.yml
 
 # Verify
 kubectl -n istio-system get svc prometheus  # It must be installed by default in Istio initialization
@@ -2637,7 +2639,7 @@ You can see the access logs in the terminal.
 After all, you can disable the logging with the following command:
 
 ```sh
-kc delete -f envoy-logging.yml
+kubectl delete -f envoy-logging.yml
 ```
 
 
@@ -2669,9 +2671,7 @@ terraform destroy -auto-approve
 
 Congraturation! You completed all steps. Thank you for following this tutorial.
 
-In tutorial, we updated the server manually. It's no problem for once or serveral times. But if you need to update your application many times, it's not good approach, because manual update needs time and also it may lead operation mistakes. Also You may want to run your application test before the deployment. To solve this problem, you can follow CI/CD approach.
-
-These days, because a web application with HTTP is not safe enough for the current internet environment, it is standard to provide web applications with HTTPS. In this tutorial case, the public services, the front-end web application and back-end web API application, can be provided by HTTPS by applying a SSL certificate to the SLB.
+In tutorial, we updated the applications manually. It's no problem for once or serveral times. But if you need to update your application many times, it's not smart approach, because manual update needs time and also it may lead operation mistakes. In addition, you may want to run your application test before the deployment every time. To solve this problem, you can follow CI/CD approach.
 
 If you are interested in the above content, [this DevOps tutorial](https://github.com/alibabacloud-howto/devops) in Alibaba Cloud How-to document can help you. Or, if you are interested in the security products in Alibaba Cloud, you can refer official documents, such as [Web Application Firewall](https://www.alibabacloud.com/help/doc-detail/28517.htm), or [DDoS Protection](https://www.alibabacloud.com/help/doc-detail/28399.htm).
 
