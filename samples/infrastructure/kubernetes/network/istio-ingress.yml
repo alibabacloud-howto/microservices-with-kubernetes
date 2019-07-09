@@ -1,0 +1,71 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-ingressgateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: istio-ingressvirtualservice-frontend
+spec:
+  hosts:
+  - frontend-app.microservices.yyyyy.example.com  # You have to configure DNS record
+  gateways:
+  - istio-ingressgateway
+  http:
+  - route:
+    - destination:
+        host: frontend-app-svc
+        port:
+          number: 80
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: istio-ingressvirtualservice-backend
+spec:
+  hosts:
+  - backend-app.microservices.yyyyy.example.com  # You have to configure DNS record
+  gateways:
+  - istio-ingressgateway
+  http:
+  - match:
+    - uri:
+        prefix: /api
+    route:
+    - destination:
+        host: backend-app-svc
+        subset: stable
+        port:
+          number: 3000
+      weight: 100  # all for it
+    - destination:
+        host: backend-app-svc
+        subset: beta
+        port:
+          number: 3000
+      weight: 0
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: istio-ingressdestinationrule-back
+spec:
+  host: backend-app-svc
+  subsets:
+  - name: stable
+    labels:
+      version: v1  # new one
+  - name: beta
+    labels:
+      version: v1-beta

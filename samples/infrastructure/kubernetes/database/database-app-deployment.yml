@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-app-svc
+  labels:
+    app: database-app-svc
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: database-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-app-deployment
+spec:
+  selector:
+    matchLabels:
+      app: database-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: database-app
+    spec:
+      containers:
+      - name: database-app
+        image: registry.ap-northeast-1.aliyuncs.com/yyyyy/howto-microservices-database-app:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080

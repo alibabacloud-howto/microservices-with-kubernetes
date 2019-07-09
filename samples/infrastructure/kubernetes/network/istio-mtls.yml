@@ -1,0 +1,20 @@
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: mysql-mtls-authn
+spec:
+  targets:
+  - name: mysql-db-svc
+  peers:
+  - mtls:
+      mode: STRICT  # It's necessary to ensure mysql connection. See more: https://istio.io/faq/security/#mysql-with-mtls
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: mysql-mtls-dr
+spec:
+  host: mysql-db-svc
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL  # It's necessary to ensure mysql connection. See more: https://istio.io/faq/security/#mysql-with-mtls

@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kubernetes-ingress
+spec:
+  rules:
+  - host: frontend-app.microservices.yyyyy.example.com  # You have to configure DNS record
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: frontend-app-svc
+          servicePort: 80
+  - host: backend-app.microservices.yyyyy.example.com  # You have to configure DNS record
+    http:
+      paths:
+      - path: /api
+        backend:
+          serviceName: backend-app-svc
+          servicePort: 3000
