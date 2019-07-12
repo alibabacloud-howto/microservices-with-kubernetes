@@ -14,8 +14,9 @@
 10. [Step 3 - Configure auto scaling](#step-3---configure-auto-scaling)
 11. [Step 4-1 - Integrate Istio to the Kubernetes cluster](#step-4-1---integrate-istio-to-the-kubernetes-cluster)
 12. [Step 4-2 - Operation with Istio](#step-4-2---operation-with-istio)
-13. [Cleanup](#cleanup)
-14. [Support](#support)
+13. [Step 4-3 - Configure TLS with Istio](#step-4-3---configure-tls-with-istio)
+14. [Cleanup](#cleanup)
+15. [Support](#support)
 
 
 ## Introduction
@@ -91,7 +92,7 @@ kubectl version
 This tutorial was checked with the following enviroinment:
 
 * macOS High Sierra: 10.13.4
-* Terraform: 0.11.14 (with plugin for provider "alicloud" (1.48.0))
+* Terraform: 0.11.14 (with plugin for provider "alicloud" (1.51.0))
 * Docker Desktop community: 2.0.0.3
 * Kubernetes: v1.10.11(Client), v1.11.5(Server)
 
@@ -387,7 +388,7 @@ In this step, we will create a [Virtual Private Cloud (VPC)](https://www.alibaba
     cp ../terraform/kubeconfig .
     export KUBECONFIG="$(pwd)/kubeconfig"
     echo $KUBECONFIG
-    ls -l
+    ls -ltr
     ```
 
     and verify it works as follows:
@@ -449,7 +450,7 @@ To build the Vue.js front-end application in the later step, you need [npm](http
 You can check that you have npm with the following command:
 
 ```sh
-kubectl version
+npm -v
 ```
 
 This tutorial was checked with the following enviroinment:
@@ -567,7 +568,7 @@ This tutorial was checked with the following enviroinment:
         touch frontend-app-deployment.yml
         ```
 
-        and copy the following content into the file. Please note that changing the container repository url in the `image` property to yours accordingly.
+        and copy the following content into the file.
 
         `frontend-app-deployment.yml`
         ```yml
@@ -592,6 +593,8 @@ This tutorial was checked with the following enviroinment:
                 ports:
                 - containerPort: 80
         ```
+
+        Please change the container repository url in the `image` property to yours accordingly.
 
         It describes we use the front-end web application container image we pushed in the previous step, and require only 1 [Pod](https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/), which runs the application container, with port 80.
 
@@ -664,7 +667,7 @@ This tutorial was checked with the following enviroinment:
       kubectl get service
       ```
 
-      As you can see, a Service is added on the cluster. The *TYPE* of the Service is *LoadBalancer* and *EXTERNAL-IP* is given to it. You can access to the website of the front-end web application on your browser with the IP address. Please note that it may take a few seconds to get the *EXTERNAL-IP*.
+      As you can see, a Service is added on the cluster. The *TYPE* of the Service is *LoadBalancer*, and it has an *EXTERNAL-IP*. You can access to the website of the front-end web application on your browser with the IP address. Please note that it may take a few seconds to get the *EXTERNAL-IP*.
 
       ![images/frontend_app_deployment_service.png](images/frontend_app_deployment_service.png)
 
@@ -690,6 +693,7 @@ This tutorial was checked with the following enviroinment:
           type: ClusterIP  # changed
           ports:
           - port: 80
+            # targetPort: 80  # changed
             name: http  # changed
           selector:
             app: frontend-app
@@ -709,7 +713,7 @@ This tutorial was checked with the following enviroinment:
         kubectl get service
         ```
 
-        After finished the applying, the type of the Service is changed and the Service doesn't have *EXTERNAL-IP* anymore.
+        After finished the applying, the *TYPE* of the Service is changed and the Service doesn't have *EXTERNAL-IP* anymore.
 
     2. Create an Ingress configuration file
 
@@ -741,7 +745,9 @@ This tutorial was checked with the following enviroinment:
                   servicePort: 80
         ```
 
-        It describes we use an Ingress in front of the Service of front-end, and require the rule that passes the request to the Service if the request for the specified host and path comes. Please change the `host` property to yours accrodingly. You can add any subdomain with your domain name registered in Alibaba Cloud. If you haven't registered any Domain in Alibaba Cloud, follow [this step](#prerequisite).
+        It describes we use an Ingress in front of the Service of front-end, and require the rule that passes the request to the Service if the request for the specified host and path comes.
+
+        Please change the `host` property to yours accrodingly. You can add any subdomain with your domain name registered in Alibaba Cloud. If you haven't registered any Domain in Alibaba Cloud, follow [this step](#prerequisite).
 
         Then, apply it.
 
@@ -750,7 +756,7 @@ This tutorial was checked with the following enviroinment:
         kubectl get ingress
         ```
 
-        As you can see, an Ingress is added on the cluster. The *ADDRESS* of the Ingress is external IP address for the cluster, yet you cannot access to the application. It's because you haven't registed a DNS record with your domain name described in the `host` property, and Ingress doesn't pass the request not matching the rule, such as the request with IP address. Please note that it may take several minutes to get a new external IP address.
+        As you can see, an Ingress is added on the cluster. The *ADDRESS* of the Ingress is external IP address for the cluster, yet you cannot access to the application. It's because you haven't registed a DNS record with your domain name described in the `host` property, and Ingress doesn't pass the request not matching the rule, such as a request with IP address. Please note that it may take several minutes to get a new external IP address.
 
     3. Add a DNS record
 
@@ -969,9 +975,9 @@ In this step, we will deploy a back-end web API application. It has a simple fun
 
     Now, you have pushed the container image to the container registory. You can verify it in the [Container Registory web console](https://cr.console.aliyun.com/ap-northeast-1/instances/repositories). Please note that the region of the web console is correct one.
 
-3. Deploy the back-end application container to the cluster
+3. Deploy the back-end web API application container to the cluster
 
-    You have created a back-end application container. Let's deploy it on the cluster.
+    You have created a back-end web API application container. Let's deploy it on the cluster.
 
     1. Change the working directory
 
@@ -991,7 +997,7 @@ In this step, we will deploy a back-end web API application. It has a simple fun
         touch backend-app-deployment.yml
         ```
 
-        and copy the following content into the file. Please change the `image` property to yours accordingly.
+        and copy the following content into the file:
 
         `backend-app-deployment.yml`
         ```yml
@@ -1035,7 +1041,9 @@ In this step, we will deploy a back-end web API application. It has a simple fun
                     memory: 256Mi
         ```
 
-        It's similar to the front-end one. It describes we use the back-end application container image we pushed in the previous step, and require 2 Pod with port 3000. This time the configuration specifies the requests about the Pod's spec of the CPU and memory.
+        Please change the `image` property to yours accordingly.
+
+        It's similar to the front-end one. It describes we use the back-end web API application container image we pushed in the previous step, and require 2 Pod with port 3000. This time the configuration specifies the requests about the Pod's spec of the CPU and memory.
 
     3. Apply the Kubernetes configuration file
 
@@ -1088,7 +1096,7 @@ In this step, we will deploy a back-end web API application. It has a simple fun
                   servicePort: 3000
         ```
 
-        It describes we use an Ingress in front of the Service of back-end web application, and require the rule that passes the request to the Service if the request for the specified host and path comes. Please change the `host` property to yours accrodingly. You can add any subdomain with your domain name registered in Alibaba Cloud. If you haven't registered any Domain in Alibaba Cloud, follow [this step](#prerequisite).
+        It describes we use an Ingress in front of the Service of the applications, and require the rule that passes the request to the Service if the request for the specified host and path comes. Please change the `host` property to yours accrodingly. You can add any subdomain with your domain name registered in Alibaba Cloud. If you haven't registered any Domain in Alibaba Cloud, follow [this step](#prerequisite).
 
         Then, apply it.
 
@@ -1099,7 +1107,7 @@ In this step, we will deploy a back-end web API application. It has a simple fun
 
     5. Add a DNS record
 
-        After updated the Ingress configuration, add a DNS record for the back-end application which you specified in the Ingress configuration.
+        After updated the Ingress configuration, add a DNS record for the back-end web API application which you specified in the Ingress configuration.
 
         First, change the working directory to the one which contains the Terraform file we created before,
 
@@ -1113,9 +1121,9 @@ In this step, we will deploy a back-end web API application. It has a simple fun
         ```sh
         ...
 
-        # Domain name of the back-end application
+        # Domain name of the back-end web API application
         back_domain = "example.com"
-        # Subdomain name of the back-end application
+        # Subdomain name of the back-end web API application
         back_subdomain = "backend-app.microservices.yyyyy"
         ```
 
@@ -1246,7 +1254,7 @@ Let's make the front-end web application request to the back-end web API applica
 
     Please note the container image information at the end of the output, which will be used in the Kubernetes configuration.
 
-    Also, change the container image version specified in the Kubernetes Deployment configuration as follows. Please note that changing the container repository url in the `image` property to yours accordingly.
+    Also, change the container image version specified in the Kubernetes Deployment configuration as follows:
 
     ```sh
     cd ../../  # It should be /<path>/<to>/<your>/<working>/<directory>/<repsitory-root>
@@ -1260,6 +1268,8 @@ Let's make the front-end web application request to the back-end web API applica
     image: registry.ap-northeast-1.aliyuncs.com/yyyyy/howto-microservices-frontend-app:1.0.1
     ...
     ```
+
+    Please change the container repository url in the `image` property to yours accordingly.
 
     Then, apply it.
 
@@ -1291,7 +1301,7 @@ In this step, we will create a MySQL database on the cluster. We will create a d
 
 2. Push a docker image to the container repository
 
-    To initialize the database, we use the official MySQL container feature of [executing files when the container started for the first time](https://hub.docker.com/_/mysql/#initializing-a-fresh-instance) to run a sql file. Hence, we will create a docker image which contains a sql file based on the official MySQL container image.
+    To initialize the database, we use the official MySQL container feature of [creating a new user with environment variables](https://hub.docker.com/_/mysql/#environment-variables), and [executing files when the container started for the first time](https://hub.docker.com/_/mysql/#initializing-a-fresh-instance) to run a sql file. Hence, we will create a docker image which contains a sql file based on the official MySQL container image in this step.
 
     First, create a Dockerfile,
 
@@ -1371,7 +1381,7 @@ In this step, we will create a MySQL database on the cluster. We will create a d
 
     1. Create a Kubernetes configuration file
 
-        First, create a Secret configuration which contains the MySQL database account credentials as follows:
+        First, create a Secret configuration which contains the MySQL database user credentials as follows:
 
         ```sh
         touch mysql-db-secret.yml
@@ -1398,7 +1408,7 @@ In this step, we will create a MySQL database on the cluster. We will create a d
         echo -n 'm!cr0serv!ces' | base64  # bSFjcjBzZXJ2IWNlcw==
         ```
 
-        Then, create a Deployment configuration as follows. Please note that changing the container repository url in the `image` property to yours accordingly.
+        Then, create a Deployment configuration as follows:
 
         ```sh
         touch mysql-db-deployment.yml
@@ -1456,7 +1466,9 @@ In this step, we will create a MySQL database on the cluster. We will create a d
                       key: password
         ```
 
-        It describes we use the database container image we pushed in the previous step, and use the variables which we defined in the Secret configuration.
+        Please change the container repository url in the `image` property to yours accordingly.
+
+        It describes we use the database container image we pushed in the previous step, and set the envirionment variables which we defined in the Secret configuration.
 
     2. Apply the Kubernetes configuration files
 
@@ -1475,7 +1487,7 @@ In this step, we will create a MySQL database on the cluster. We will create a d
 
     3. Verify the database
 
-        Before we use the database from database API application, verify the database is created as intended.
+        Before we use the database from database API application, verify the database was created as intended.
 
         First, enter the MySQL container and check the database is created with following commands:
 
@@ -1545,7 +1557,7 @@ In this step, we will deploy a database API application. It has a simple functio
 
     The database API application is created with [Spring Boot](https://spring.io/projects/spring-boot), which is a Java web application framework. In this step, we will create a container image which contains the application.
 
-    Please note that the database API application uses the MySQL database user name and password we defined in the Secret configuration in the [previous step](#step-2-4-create-a-database) to connect the MySQL database. The same values are defined in the *src/main/resources/application.properties* file. In this file, the url of the database is also defined as follows:
+    Please note that the database API application uses the MySQL database user name and password we defined in the Secret configuration in the [previous step](#step-2-4-create-a-database) to connect the MySQL database, and the values are defined in the *src/main/resources/application.properties* file. In this file, the url of the database is also defined as follows:
 
     ```
     spring.datasource.url=jdbc:mysql://mysql-db-svc:3306/microservicesdb
@@ -1645,7 +1657,7 @@ In this step, we will deploy a database API application. It has a simple functio
         touch database-app-deployment.yml
         ```
 
-        and copy the following content into the file. Please note that changing the container repository url in the `image` property to yours accordingly.
+        and copy the following content into the file:
 
         `database-app-deployment.yml`
         ```yml
@@ -1685,6 +1697,8 @@ In this step, we will deploy a database API application. It has a simple functio
                 - containerPort: 8080
         ```
 
+        Please change the container repository url in the `image` property to yours accordingly.
+
         It is similar to the backend-end one. It describes we use the database API application container image we pushed in the previous step, and require 1 Pod with port 8080.
 
     3. Apply the Kubernetes configuration file
@@ -1705,9 +1719,9 @@ In this step, we will deploy a database API application. It has a simple functio
         DATABASE_API_ENDPOINT = http://database-app-svc:8080
         ```
 
-        Hence, the back-end web API application returns the user data with user purchase data, and you can see it on your browser with its url. For example, http://backend-app.microservices.yyyyy.example.com/api/user?id=1. And, you can see the website of the front-end web application shows the user data with user purchase data on your browser with its url too. For example, http://frontend-app.microservices.yyyyy.example.com.
+        Hence, the back-end web API application returns the user data with user purchase data, and you can see it on your browser with its url. For example, http://backend-app.microservices.yyyyy.example.com/api/user?id=1. Also, you can see the website of the front-end web application shows the user data with user purchase data on your browser with its url too. For example, http://frontend-app.microservices.yyyyy.example.com.
 
-        Now, you completed to deploy the database API application on the cluster. Please note that we don't update Ingress configuration because we keep the database API application private.
+        Now, you completed to deploy the database API application on the Kubernetes cluster. Please note that we don't update Ingress configuration because we keep the database API application private.
 
 Congratulation! You already completed to create a microservice on Kubernete cluster! It contains a front-end web application, back-end web API application, and database API application with MySQL database. The content is simple and small but it gets the basic of microservices architecture on Kubernetes. And you already know how to use Terraform with Alibaba Cloud, and also you already know how to use Alibaba Cloud Container Service, Container Registory, and DNS with Kubernetes.
 
@@ -1761,7 +1775,7 @@ In this step, we configure the [Horizontal Pod Autoscaler (HPA)](https://kuberne
           targetAverageUtilization: 70
     ```
 
-    It describe we define an auto scaling based on CPU utilization of Pods for the back-end application. The auto scaling rule targets the CPU utilization average to be 70%, and the scaling is defined with the minimum number of the Pods as 1 and the maximum number of the Pods as 3.
+    It describe we define an auto scaling based on CPU utilization of Pods for the back-end web API application. The auto scaling rule targets the CPU utilization average to be 70%, and the scaling is defined with the minimum number of the Pods as 1 and the maximum number of the Pods as 3.
 
 3. Apply the Kubernetes configuration file
 
@@ -1773,7 +1787,7 @@ In this step, we configure the [Horizontal Pod Autoscaler (HPA)](https://kuberne
     kubectl get all
     ```
 
-    As you can see, the HPA is configured for the back-end application. And the number of Pod for the back-end application is 2 currently, which is we configured in its Deployment.
+    As you can see, the HPA is configured for the back-end web API application. And the number of Pod for the back-end web API application is 2 currently, which is we configured in its Deployment.
 
     ![images/backend_app_hpa_scaledown_before.png](images/backend_app_hpa_scaledown_before.png)
 
@@ -1897,7 +1911,7 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
 
 1. Configure mutual TLS
 
-    Before we deploy the applications, we enable [mTLS(mutual TLS)](https://istio.io/docs/concepts/security/#mutual-tls-authentication) on Istio. It encrypts the connection between the services. In this tutorial, we just use it to [make mysql connection secure and work](https://istio.io/faq/security/#mysql-with-mtls).
+    Before we deploy the applications, we enable [mTLS(mutual TLS)](https://istio.io/docs/concepts/security/#mutual-tls-authentication) on Istio. It encrypts the connection between the services. In this tutorial, we use it to [make mysql connection secure and work](https://istio.io/faq/security/#mysql-with-mtls).
 
     1. Change the working directory
 
@@ -1938,7 +1952,7 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
           host: mysql-db-svc
           trafficPolicy:
             tls:
-              mode: ISTIO_MUTUAL
+              mode: ISTIO_MUTUAL  # It's necessary to ensure mysql connection. See more: https://istio.io/faq/security/#mysql-with-mtls
         ```
 
         It describes we require mTLS to the specified Service.
@@ -2008,25 +2022,27 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
 
 3. Configure ingress traffic with Istio
 
-    We will use [Gateway and Virtual services](https://istio.io/docs/concepts/traffic-management/#traffic-routing-and-configuration) to configure ingress trafic. Gateway can configure the traffic at the edge of the mesh, and Virtual Service can configure the traffic routing between the Gateway and Kubernetes Service.
+    We will use [Gateway and Virtual services](https://istio.io/docs/concepts/traffic-management/#traffic-routing-and-configuration) to configure ingress trafic. [Gateway](https://istio.io/docs/reference/config/networking/v1alpha3/gateway/) can configure the traffic at the edge of the mesh, and [Virtual Service](https://istio.io/docs/reference/config/networking/v1alpha3/virtual-service/) can configure the traffic routing between the Gateway and Kubernetes Service.
 
     1. Create a Kubernetes configuration file
 
-        Create a Istio ingress configuration file as follows:
+        Create a Istio ingress configuration files as follows:
 
         ```sh
-        touch network/istio-ingress.yml
+        touch network/istio-gateway.yml
+        touch network/istio-virtualservice.yml
         ```
 
-        `istio-ingress.yml`
+        `network/istio-gateway.yml`
         ```yml
         apiVersion: networking.istio.io/v1alpha3
         kind: Gateway
         metadata:
           name: istio-ingressgateway
+          namespace: istio-system
         spec:
           selector:
-            istio: ingressgateway
+            istio: ingressgateway  # use istio default ingress gateway
           servers:
           - port:
               number: 80
@@ -2034,11 +2050,15 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
               protocol: HTTP
             hosts:
             - "*"
-        ---
+        ```
+
+        `network/istio-virtualservice.yml`
+        ```yml
         apiVersion: networking.istio.io/v1alpha3
         kind: VirtualService
         metadata:
-          name: istio-ingressvirtualservice-frontend
+          name: istio-virtualservice-frontend
+          namespace: istio-system
         spec:
           hosts:
           - frontend-app.microservices.yyyyy.example.com  # You have to configure DNS record
@@ -2047,14 +2067,15 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
           http:
           - route:
             - destination:
-                host: frontend-app-svc
+                host: frontend-app-svc.default.svc.cluster.local
                 port:
                   number: 80
         ---
         apiVersion: networking.istio.io/v1alpha3
         kind: VirtualService
         metadata:
-          name: istio-ingressvirtualservice-backend
+          name: istio-virtualservice-backend
+          namespace: istio-system
         spec:
           hosts:
           - backend-app.microservices.yyyyy.example.com  # You have to configure DNS record
@@ -2066,37 +2087,41 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
                 prefix: /api
             route:
             - destination:
-                host: backend-app-svc
+                host: backend-app-svc.default.svc.cluster.local
                 port:
                   number: 3000
         ```
 
-        It describes we use Istio Gateway with HTTP port for all domain name, and use Istio Vertual Service for the Kubernetes Services of the front-end web application and the back-end application. Please change the `hosts` property to yours accordingly.
+        It describes we use Istio Gateway with HTTP port for all domain name, and use Istio Vertual Service for the Kubernetes Services of the front-end web application and the back-end web API application. Please change the `hosts` property to yours accordingly.
 
-        Then, apply it.
+        In this tutorial, we create the Gateway and the VirtualServices in the *istio-system* namespace in order to clarify they are Istio resources. On the other hand, the Services of the front-end web application and back-end web API application are in the *default* namespace. Hence, the domain name of the Services in `host` property should be specified with namespace in detail, such as  *frontend-app-svc.default.svc.cluster.local*. In fact, if you create the Gateway and the VirtualServices in the *default* namespace without specifying the `namespace` property, you can write the domain name of the Services with just the Service's name, such as *frontend-app-svc*. For more information about DNS resolution in Kubernetes, see [this official document](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/).
+
+        Then, apply them.
 
         ```sh
-        kubectl apply -f network/istio-ingress.yml
-        kubectl get gateway
-        kubectl get virtualservice
+        kubectl apply -f network/istio-gateway.yml
+        kubectl apply -f network/istio-virtualservice.yml
+
+        kubectl -n istio-system get gateway
+        kubectl -n istio-system get virtualservice
         ```
 
         As you can see, a new GateWay and a new Virtual Service are added on the cluster.
 
     2. Update the DNS record
 
-        Since we changed to use Istio Gateway instead of Kubernetes Ingress to manage the ingress traffic, the IP address for the DNS record has changed. Hence, we need to change the DNS record.
+        Since we changed to use Istio Gateway instead of Kubernetes Ingress to manage the ingress traffic, the IP address for the DNS record has changed and we need to change it. Istio automatically generates a Service with the type of load balancer in front of Istio Gateway, hence we will update the DNS record with its IP address.
 
-        First, check the ingress host IP address and change the working directory with the following command:
+        First, check the IP address and change the working directory with the following command:
 
         ```sh
-        export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        echo $INGRESS_HOST
+        export ISTIO_INGRESS_HOST_IP=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo $ISTIO_INGRESS_HOST_IP
 
         cd ../terraform/
         ```
 
-        Then, change the Terraform variable with your ingress host IP address as follows:
+        Then, change the Terraform variable with your Istio Ingress host IP address as follows:
 
         `terraform.tfvars`
         ```sh
@@ -2132,7 +2157,6 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
         ```
 
         After it finished, you can access to the website on your browser with your domain name. For example, http://frontend-app.microservices.yyyyy.example.com.
-
 
 Now, you completed to deploy the applications and construct a microservice on the Kubernetes cluser with Istio!
 
@@ -2186,7 +2210,7 @@ sh docker_image_build_and_push.sh
 
 Please note the container image information at the end of the output, which will be used in the Kubernetes configuration.
 
-Third, change the Deployment configuration of the back-end web API application. The point is attaching the labels to the Deployments. Please change the `image` property to yours accordingly.
+Third, change the Deployment configuration of the back-end web API application. The point is attaching the labels to the Deployments.
 
 ```sh
 cd ../../infrastructure/kubernetes/
@@ -2254,6 +2278,10 @@ spec:
             memory: 256Mi
 ```
 
+Please change the `image` property to yours accordingly.
+
+It describes we use the back-end web API application container images, one is the old version and the other is the new version.
+
 And apply it.
 
 ```sh
@@ -2263,36 +2291,29 @@ kubectl get pod
 
 Fourth, change the Virtual Service configuration and Destination Rule configuration as follows:
 
-`network/istio-ingress.yml`
+`network/istio-virtualservice.yml`
 ```yml
 apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
+kind: VirtualService
 metadata:
-  name: istio-ingressgateway
+  name: istio-virtualservice-frontend
 ...
 
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: istio-ingressvirtualservice-frontend
-...
-
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: istio-ingressvirtualservice-backend
+  name: istio-virtualservice-backend
 ...
     route:
     - destination:
-        host: backend-app-svc
+        host: backend-app-svc.default.svc.cluster.local
         subset: stable
         port:
           number: 3000
       weight: 90
     - destination:
-        host: backend-app-svc
+        host: backend-app-svc.default.svc.cluster.local
         subset: beta
         port:
           number: 3000
@@ -2301,9 +2322,10 @@ metadata:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: istio-ingressdestinationrule-back
+  name: istio-destinationrule-backend
+  namespace: istio-system
 spec:
-  host: backend-app-svc
+  host: backend-app-svc.default.svc.cluster.local
   subsets:
   - name: stable
     labels:
@@ -2316,16 +2338,19 @@ spec:
 And apply it.
 
 ```sh
-kubectl apply -f network/istio-ingress.yml
-kubectl get virtualservice
-kubectl get destinationrule
+kubectl apply -f network/istio-virtualservice.yml
+
+kubectl -n istio-system get virtualservice
+kubectl -n istio-system get destinationrule
 ```
 
 The point is creating the subsets with the labels of the Deployments, and set the weights to the destinations with the subsets. The routing by Virtual Service can be more complex. You can refer the official document such as [using the value in cookie](https://istio.io/blog/2017/0.1-canary/#focused-canary-testing).
 
 Then, access to the website on your browser with your domain name many times. For example, http://frontend-app.microservices.yyyyy.example.com. As you can see, the data of the new version is shown occasionally.
 
-Finally, you can release the new one completely by changing the Deloyment configuration, and Virtual Service and Destination Rule configuration. Please change the `image` property to yours accordingly.
+Finally, you can release the new one completely by changing the configurations.
+
+Change the Deployment configuration as follow:
 
 `back/backend-app-deployment.yml`
 ```yml
@@ -2362,35 +2387,32 @@ metadata:
 ...
 ```
 
-`network/istio-ingress.yml`
+Please change the `image` property to yours accordingly.
+
+And, Change the Virtual Service and Destination Rule configuration as follow:
+
+`network/istio-virtualservice.yml`
 ```yml
 apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
+kind: VirtualService
 metadata:
-  name: istio-ingressgateway
+  name: istio-virtualservice-frontend
 ...
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: istio-ingressvirtualservice-frontend
-...
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: istio-ingressvirtualservice-backend
-spec:
+  name: istio-virtualservice-backend
 ...
     route:
     - destination:
-        host: backend-app-svc
+        host: backend-app-svc.default.svc.cluster.local
         subset: stable
         port:
           number: 3000
       weight: 100  # all for it
     - destination:
-        host: backend-app-svc
+        host: backend-app-svc.default.svc.cluster.local
         subset: beta
         port:
           number: 3000
@@ -2399,9 +2421,10 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: istio-ingressdestinationrule-back
+  name: istio-destinationrule-backend
+  namespace: istio-system
 spec:
-  host: backend-app-svc
+  host: backend-app-svc.default.svc.cluster.local
   subsets:
   - name: stable
     labels:
@@ -2411,16 +2434,17 @@ spec:
       version: v1-beta
 ```
 
-The version for the stable subset is changed to the new one, and the weight of the stable subset is changed to 100.
+The `version` property in the *stable* subset is changed to the new one, and the `weight` property in the destination for the *stable* subset is changed to 100.
 
 And apply it.
 
 ```sh
 kubectl apply -f back/backend-app-deployment.yml
 kubectl get pod
-kubectl apply -f network/istio-ingress.yml
-kubectl get virtualservice
-kubectl get destinationrule
+
+kubectl apply -f network/istio-virtualservice.yml
+kubectl -n istio-system get virtualservice
+kubectl -n istio-system get destinationrule
 ```
 
 Now, you completed to do canary deployment with Istio!
@@ -2477,7 +2501,7 @@ Fourth, run the port forwarding as follows:
 kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=kiali -o jsonpath='{.items[0].metadata.name}') 20001:20001
 ```
 
-Finally, access to the Kiali web console http://localhost:20001/kiali/console on your browser, login with the account, and click the graph item in the left menu. As you can see, Kiali visualizes the service mesh. If you cannot see any graph, confirm the selected namespace is "default", and try to change the graph data time range from the setting at the right top corner.
+Finally, access to the Kiali web console http://localhost:20001/kiali/console on your browser, login with the account, and click the graph item in the left menu. As you can see, Kiali visualizes the service mesh. If you cannot see any graph, confirm the selected namespace is "default", change the graph data time range from the setting at the right top corner, and try to access to the website several times.
 
 ![images/kiali_console.png](images/kiali_console.png)
 
@@ -2513,9 +2537,9 @@ Second, send some requests to the service mesh for Grafana to collect data. For 
 ```sh
 echo $KUBECONFIG
 ls $KUBECONFIG
-export FRONTEND_URL=$(kubectl get virtualservice istio-ingressvirtualservice-frontend -o jsonpath='{.spec.hosts[0]}')
+export FRONTEND_URL=$(kubectl -n istio-system get virtualservice istio-virtualservice-frontend -o jsonpath='{.spec.hosts[0]}')
 echo $FRONTEND_URL
-export BACKEND_URL=$(kubectl get virtualservice istio-ingressvirtualservice-backend -o jsonpath='{.spec.hosts[0]}')
+export BACKEND_URL=$(kubectl -n istio-system get virtualservice istio-virtualservice-backend -o jsonpath='{.spec.hosts[0]}')
 echo $BACKEND_URL
 
 for i in `seq 1 50`; do curl -s -o /dev/null http://$FRONTEND_URL/; done
@@ -2528,7 +2552,7 @@ Third, run the port forwarding as follows:
 kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000
 ```
 
-Finally, access to the Grafana web console http://localhost:3000/ on your browser, and select some dashboard such as *Istio Service Dashboard*. As you can see, Grafana visualizes the metrics.
+Finally, access to the Grafana web console http://localhost:3000/ on your browser, and select some dashboard such as *Istio Service Dashboard*. As you can see, Grafana visualizes the metrics. If you cannot see any graph, try to send requests to the website again.
 
 ![images/grafana_console.png](images/grafana_console.png)
 
@@ -2563,9 +2587,9 @@ Second, send some requests to the service mesh for Zipkin to collect data. For e
 ```sh
 echo $KUBECONFIG
 ls $KUBECONFIG
-export FRONTEND_URL=$(kubectl get virtualservice istio-ingressvirtualservice-frontend -o jsonpath='{.spec.hosts[0]}')
+export FRONTEND_URL=$(kubectl -n istio-system get virtualservice istio-virtualservice-frontend -o jsonpath='{.spec.hosts[0]}')
 echo $FRONTEND_URL
-export BACKEND_URL=$(kubectl get virtualservice istio-ingressvirtualservice-backend -o jsonpath='{.spec.hosts[0]}')
+export BACKEND_URL=$(kubectl -n istio-system get virtualservice istio-virtualservice-backend -o jsonpath='{.spec.hosts[0]}')
 echo $BACKEND_URL
 
 # Please note the default Istio’s sampling rate for tracing is 1%
@@ -2579,7 +2603,7 @@ Third, run the port forwarding as follows:
 kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=zipkin -o jsonpath='{.items[0].metadata.name}') 9411:9411
 ```
 
-Finally, access to the Zipkin web console http://localhost:9411/zipkin/ on your browser, check there is no filter, and click the search icon. As you can see, Zipkin visualizes the distributed tracing of the service mesh.
+Finally, access to the Zipkin web console http://localhost:9411/zipkin/ on your browser, check there is no filter, and click the search icon. As you can see, Zipkin visualizes the distributed tracing of the service mesh. If you cannot see any graph, try to send requests to the website again.
 
 ![images/zipkin_console.png](images/zipkin_console.png)
 
@@ -2611,9 +2635,9 @@ Second, send some requests to the service mesh to create logs. For example, run 
 ```sh
 echo $KUBECONFIG
 ls $KUBECONFIG
-export FRONTEND_URL=$(kubectl get virtualservice istio-ingressvirtualservice-frontend -o jsonpath='{.spec.hosts[0]}')
+export FRONTEND_URL=$(kubectl -n istio-system get virtualservice istio-virtualservice-frontend -o jsonpath='{.spec.hosts[0]}')
 echo $FRONTEND_URL
-export BACKEND_URL=$(kubectl get virtualservice istio-ingressvirtualservice-backend -o jsonpath='{.spec.hosts[0]}')
+export BACKEND_URL=$(kubectl -n istio-system get virtualservice istio-virtualservice-backend -o jsonpath='{.spec.hosts[0]}')
 echo $BACKEND_URL
 
 for i in `seq 1 50`; do curl -s -o /dev/null http://$FRONTEND_URL/; done
@@ -2632,7 +2656,7 @@ kubectl logs -l app=backend-app -l version=v1 -c istio-proxy
 kubectl logs -l app=database-app -c istio-proxy
 ```
 
-You can see the access logs in the terminal.
+You can see the access logs in the terminal. If you cannot see any logs, try to send requests to the website again.
 
 ![images/envoy_proxy_log.png](images/envoy_proxy_log.png)
 
@@ -2643,6 +2667,470 @@ kubectl delete -f envoy-logging.yml
 ```
 
 
+## Step 4-3 - Configure TLS with Istio
+
+These days, because a web application with HTTP is not safe enough for the current internet environment, it is standard to provide web applications with HTTPS. In this step, we configure a TLS ingress gateway to serve the website with HTTPS.
+
+There are multiple ways to achieve HTTPS provided by Istio. For example, [mounting existing certificates to the ingress gateway](https://istio.io/docs/tasks/traffic-management/ingress/secure-ingress-mount/), [using SDS and cert-manager option in Istio](https://istio.io/docs/tasks/traffic-management/ingress/ingress-certmgr/), or [serving a Nginx server with certificates behind the ingress gateway](https://istio.io/docs/tasks/traffic-management/ingress/ingress-sni-passthrough/). In this tutorial, we use cert-manager separately to create certificates authorized by Let's encrypt and then mount the certificates to the ingress gateway, in order to keep the dependency of the Istio configuration simple and to make it easy to change some part of the configuration.
+
+[Cert-manager](https://docs.cert-manager.io/en/latest/index.html) is a native Kubernetes certificate management controller, which can issue certificates of some CA, such as Let's Encrypt. And, [Let’s Encrypt](https://letsencrypt.org/) is a free, automated, and open Certificate Authority. Let’s Encrypt provides two [challenge types](https://letsencrypt.org/docs/challenge-types/) to get a certificate, HTTP-01 challenge and DNS-01 challenge. In this tutorial, we use HTTP-01 challenge which is the most common challenge type today. Alibaba Cloud is not supported for [DNS-01 challenge through cert-manager](https://docs.cert-manager.io/en/latest/tasks/issuers/setup-acme/dns01/#id1) currently. Please note that Let's Encrypt has [rate limit](https://letsencrypt.org/docs/rate-limits/) to issue certificates, hence we shouldn't issue new certificate if not necessary.
+
+This tutorial was checked with the following enviriongment:
+
+* Cert-manager-controller: v0.8.1
+
+1. Integrate cert-manager to Kubernetes
+
+    Run the following commands to install cert-manager to the Kubernetes cluster:
+
+    ```sh
+    # Create the namespace for cert-manager
+    kubectl create namespace cert-manager
+
+    # Label the cert-manager namespace to disable resource validation
+    kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
+
+    # Install the CustomResourceDefinitions and cert-manager itself
+    kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager.yaml --validate=false
+
+    # Verify
+    kubectl get pods --namespace cert-manager
+    ```
+
+    The Pods of cert-manager shoule be like this.
+
+    ```sh
+    NAME                                       READY     STATUS    RESTARTS   AGE
+    cert-manager-8d478bb45-9v27l               1/1       Running   0          49s
+    cert-manager-cainjector-744b987848-sjbbb   1/1       Running   0          50s
+    cert-manager-webhook-645c7c4f5f-vnw6j      1/1       Running   0          50s
+    ```
+
+    For tips, you can see the log of the cert-manager Pod with the following command:
+
+    ```sh
+    kubectl -n cert-manager logs $(kubectl -n cert-manager get po -l app=cert-manager -o jsonpath='{.items[0].metadata.name}')
+    ```
+
+2. Create an Issuer
+
+    To issue certificate, we need to configure Issuer.
+
+    First, create the Issuer configuration file,
+
+    ```sh
+    cd ../../../  # It should be /<path>/<to>/<your>/<working>/<directory>/<repsitory-root>
+    mkdir -p infrastructure/kubernetes/security/
+    cd infrastructure/kubernetes/
+
+    touch security/istio-certmanager-issuer.yml
+    ```
+
+    and copy the following content into the file.
+
+    `security/istio-certmanager-issuer.yml`
+    ```yml
+    apiVersion: certmanager.k8s.io/v1alpha1
+    kind: Issuer
+    metadata:
+      name: letsencrypt-staging
+      namespace: istio-system
+    spec:
+      acme:
+        email: hogehoge@example.com  # change to yours to get notification from Let's Encrypt
+        server: https://acme-staging-v02.api.letsencrypt.org/directory
+        privateKeySecretRef:
+          name: letsencrypt-staging-private-key
+        http01: {}
+    ---
+    apiVersion: certmanager.k8s.io/v1alpha1
+    kind: Issuer
+    metadata:
+      name: letsencrypt
+      namespace: istio-system
+    spec:
+      acme:
+        email: hogehoge@example.com  # change to yours to get notification from Let's Encrypt
+        server: https://acme-v02.api.letsencrypt.org/directory
+        privateKeySecretRef:
+          name: letsencrypt-private-key
+        http01: {}
+    ```
+
+    It describes we use Issuers for Let's encrypt, one is for staging and the other for production. Please change the email to yours accordingly.
+
+    Then, apply it.
+
+    ```sh
+    # Configure Issuer
+    kubectl apply -f security/istio-certmanager-issuer.yml
+
+    # Verify
+    kubectl -n istio-system describe issuer
+    ```
+
+    The Issuers should be like this:
+
+    ```sh
+    Name:         letsencrypt-stating
+    Namespace:    istio-system
+    ...
+
+    Name:         letsencrypt
+    Namespace:    istio-system
+    ...
+
+    Status:
+      Acme:
+        Uri:  https://acme-v02.api.letsencrypt.org/acme/acct/xxxxxxxx
+      Conditions:
+        Last Transition Time:  2019-07-11T12:46:12Z
+        Message:               The ACME account was registered with the ACME server
+        Reason:                ACMEAccountRegistered
+        Status:                True
+        Type:                  Ready
+    Events:                    <none>
+    ```
+
+3. Issue a certificate
+
+    We have created an Issuer to issue a certificate. However, before issuing a certificate with Issuer which we created in the previous step, we need to create a special ingress gateway to allow HTTP requests for the HTTP-01 challenge.
+
+    Change the Gateway configuration file as follows:
+
+    `network/istio-gateway.yml`
+    ```yml
+    apiVersion: networking.istio.io/v1alpha3
+    kind: Gateway
+    metadata:
+      name: istio-autogenerated-k8s-ingress  # MUST be this name to pass the http01 challenge to get the certificate
+      namespace: istio-system
+    spec:
+      selector:
+        istio: ingressgateway  # use istio default ingress gateway
+      servers:
+      - port:
+          number: 80
+          name: http
+          protocol: HTTP2
+        hosts:
+        - "*"
+    ```
+
+    Then, apply it.
+
+    ```sh
+    # Delete old one
+    kubectl -n istio-system delete gateway istio-ingressgateway
+
+    # Add new one
+    kubectl apply -f network/istio-gateway.yml
+    kubectl -n istio-system get gateway
+    ```
+
+    Now, let's issue a certificate. First, create the Certificate configuration file,
+
+    ```sh
+    touch security/istio-certmanager-certificate.yml
+    ```
+
+    and copy the following content into the file.
+
+    `security/istio-certmanager-certificate.yml`
+    ```yml
+    apiVersion: certmanager.k8s.io/v1alpha1
+    kind: Certificate
+    metadata:
+      name: istio-ingressgateway-certs
+      namespace: istio-system
+    spec:
+      secretName: istio-ingressgateway-certs  # MUST be this name to mount it to the istio-ingressgateway Pod automatically
+      issuerRef:
+        name: letsencrypt-staging  # letsencrypt, letsencrypt-staging
+        kind: Issuer
+      commonName: frontend-app.microservices.yyyyy.example.com
+      dnsNames:
+      - frontend-app.microservices.yyyyy.example.com
+      acme:
+        config:
+        - http01:
+            ingressClass: istio
+          domains:
+          - frontend-app.microservices.yyyyy.example.com
+    ```
+
+    Please change the domain name in `commonName`, `dnsNames`, and `domains` property to yours accordingly. And, note that the *secretName* is *istio-ingressgateway-certs*.
+
+    It describes we use a Issuer for Let's Encrypt with staging type which we created in the previouse step as testing, and require a certificate with the specified domain.
+
+    Finally, issue a certificate by applying the Certificate configuration.
+
+    ```sh
+    # Configure Certificate
+    kubectl apply -f security/istio-certmanager-certificate.yml
+
+    # Verify
+    kubectl -n istio-system describe certificate
+    ```
+
+    The Certificate should be like this:
+
+    ```sh
+    Name:         istio-ingressgateway-certs
+    Namespace:    istio-system
+    ...
+
+    Events:
+    Type    Reason              Age   From          Message
+    ----    ------              ----  ----          -------
+    Normal  Generated           40s   cert-manager  Generated new private key
+    Normal  GenerateSelfSigned  40s   cert-manager  Generated temporary self signed certificate
+    Normal  OrderCreated        40s   cert-manager  Created Order resource "istio-ingressgateway-certs-xxxxxxxxxx"
+    Normal  OrderComplete       13s   cert-manager  Order "istio-ingressgateway-certs-xxxxxxxxxx" completed successfully
+    Normal  CertIssued          13s   cert-manager  Certificate issued successfully
+    ```
+
+    After the Certificate finished to issue a certificate, a Secret containing the certificate information is created automatically. You can run the following command to verify it:
+
+    ```sh
+    kubectl -n istio-system describe secret istio-ingressgateway-certs
+    ```
+
+    The result of the command should be like this:
+
+    ```sh
+    Name:         istio-ingressgateway-certs
+    Namespace:    istio-system
+    Labels:       certmanager.k8s.io/certificate-name=istio-ingressgateway-certs
+    Annotations:  certmanager.k8s.io/alt-names=frontend-app.microservices.yyyyy.example.com
+                  certmanager.k8s.io/common-name=frontend-app.microservices.yyyyy.example.com
+                  certmanager.k8s.io/ip-sans=
+                  certmanager.k8s.io/issuer-kind=Issuer
+                  certmanager.k8s.io/issuer-name=letsencrypt-staging
+
+    Type:  kubernetes.io/tls
+
+    Data
+    ====
+    ca.crt:   0 bytes
+    tls.crt:  3656 bytes
+    tls.key:  1675 bytes
+    ```
+
+    The Secret named `istio-ingressgateway-certs` is special. The secret is [automatically mounted](https://github.com/istio/istio/blob/master/install/kubernetes/helm/istio/charts/gateways/values.yaml#L112) to the certificate files on the */etc/istio/ingressgateway-certs* path in the *istio-ingressgateway* Pod by Istio. You can see the certificates in the Pod with the following command:
+
+    ```sh
+    kubectl exec -it -n istio-system $(kubectl -n istio-system get pods -l istio=ingressgateway -o jsonpath='{.items[0].metadata.name}') -- ls -al /etc/istio/ingressgateway-certs
+    ```
+
+    The result of the command should be like this:
+
+    ```sh
+    lrwxrwxrwx 1 root root   13 Jul 11 13:02 ca.crt -> ..data/ca.crt
+    lrwxrwxrwx 1 root root   14 Jul 11 13:02 tls.crt -> ..data/tls.crt
+    lrwxrwxrwx 1 root root   14 Jul 11 13:02 tls.key -> ..data/tls.key
+    ```
+
+4. Configure ingress for application
+
+    We have issued a certificate. Let's create a Gateway with the certificate to allow HTTPS request to the application in the cluster.
+
+    Change the Gateway configuration as follows:
+
+    `network/istio-gateway.yml`
+    ```yml
+    apiVersion: networking.istio.io/v1alpha3
+    kind: Gateway
+    metadata:
+      name: istio-autogenerated-k8s-ingress  # MUST be this name to pass the http01 challenge to get the cert
+      namespace: istio-system
+    spec:
+      selector:
+        istio: ingressgateway  # use istio default ingress gateway
+      servers:
+      - port:
+          number: 80
+          name: http
+          protocol: HTTP2
+        hosts:
+        - "*"
+    ---
+    apiVersion: networking.istio.io/v1alpha3
+    kind: Gateway
+    metadata:
+      name: istio-gateway-https
+      namespace: istio-system
+    spec:
+      selector:
+        istio: ingressgateway  # use istio default ingress gateway
+      servers:
+      - port:
+          number: 443
+          protocol: HTTPS
+          name: https
+        tls:
+          mode: SIMPLE
+          privateKey: /etc/istio/ingressgateway-certs/tls.key
+          serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+        hosts:
+        - "frontend-app.microservices.yyyyy.example.com"
+    ```
+
+    Please change the domain name in `hosts` property to yours accordingly.
+
+    Also, change the VirtualService as follows:
+
+    `network/istio-virtualservice.yml`
+    ```yml
+    apiVersion: networking.istio.io/v1alpha3
+    kind: VirtualService
+    metadata:
+      name: istio-virtualservice-frontend
+      ...
+      gateways:
+      - istio-system/istio-autogenerated-k8s-ingress  # changed
+      ...
+    ---
+    apiVersion: networking.istio.io/v1alpha3
+    kind: VirtualService
+    metadata:
+      name: istio-virtualservice-frontend-https  # new one
+      namespace: istio-system
+    spec:
+      hosts:
+      - "frontend-app.microservices.yyyyy.example.com"
+      gateways:
+      - istio-system/istio-gateway-https  # HTTPS one
+      http:
+      - route:
+        - destination:
+            host: frontend-app-svc.default.svc.cluster.local
+            port:
+              number: 80
+    ---
+    apiVersion: networking.istio.io/v1alpha3
+    kind: VirtualService
+    metadata:
+      name: istio-virtualservice-backend
+      ...
+      gateways:
+      - istio-system/istio-autogenerated-k8s-ingress  # changed
+      ...
+    ```
+
+    Please change the domain name in `host` property to yours accordingly.
+
+    Then, Apply them.
+
+    ```sh
+    kubectl apply -f network/istio-gateway.yml
+    kubectl apply -f network/istio-virtualservice.yml
+    ```
+
+    After it finished, you can access to the website with HTTPS on your browser with your domain. For example, https://frontend-app.microservices.yyyyy.example.com/. You should see a warning because we used the Issuer of Let's Encrypt for stating.
+
+    ![images/https_browser_warning_fake_cert.png](images/https_browser_warning_fake_cert.png)
+
+5. Change the certificate for production
+
+    We confirmed that the configurations work and we can access to the website with HTTPS. Let's update the certifacation for production.
+
+    First, delete the temporary certificate for staging.
+
+    ```sh
+    kubectl -n istio-system delete secret istio-ingressgateway-certs
+    ```
+
+    Second, change the Certification configuration as follows to get a certification for production:
+
+    `security/istio-certmanager-certificate.yml`
+    ```yml
+    apiVersion: certmanager.k8s.io/v1alpha1
+    kind: Certificate
+    metadata:
+      name: istio-ingressgateway-certs
+      namespace: istio-system
+    spec:
+      secretName: istio-ingressgateway-certs  # MUST be this name to mount it to the istio-ingressgateway Pod automatically
+      issuerRef:
+        name: letsencrypt  # letsencrypt, letsencrypt-staging
+        kind: Issuer
+      commonName: frontend-app.microservices.yyyyy.example.com
+      dnsNames:
+      - frontend-app.microservices.yyyyy.example.com
+      acme:
+        config:
+        - http01:
+            ingressClass: istio
+          domains:
+          - frontend-app.microservices.yyyyy.example.com
+    ```
+
+    Then, apply it.
+
+    ```sh
+    # Configure Certificate
+    kubectl apply -f security/istio-certmanager-certificate.yml
+
+    # Verify
+    kubectl -n istio-system describe certificate
+    ```
+
+    The Certificate should be like this:
+
+    ```sh
+    Name:         istio-ingressgateway-certs
+    Namespace:    istio-system
+    ...
+    Events:
+      Type    Reason              Age                From          Message
+      ----    ------              ----               ----          -------
+      Normal  Generated           39s (x2 over 11m)  cert-manager  Generated new private key
+      Normal  GenerateSelfSigned  39s (x2 over 11m)  cert-manager  Generated temporary self signed certificate
+      Normal  OrderCreated        39s (x2 over 11m)  cert-manager  Created Order resource "istio-ingressgateway-certs-xxxxxxxxx"
+      Normal  OrderComplete       38s (x2 over 10m)  cert-manager  Order "istio-ingressgateway-certs-xxxxxxxxx" completed successfully
+      Normal  Cleanup             33s                cert-manager  Deleting old Order resource "istio-ingressgateway-certs-xxxxxxxxx"
+      Normal  OrderCreated        33s                cert-manager  Created Order resource "istio-ingressgateway-certs-yyyyyyyyy"
+      Normal  CertIssued          5s (x3 over 10m)   cert-manager  Certificate issued successfully
+      Normal  OrderComplete       5s                 cert-manager  Order "istio-ingressgateway-certs-yyyyyyyyy" completed successfully
+    ```
+
+    After the Certificate finished to issue a certificate, a Secret containing the certificate information is created automatically. You can run the following command to verify it:
+
+    ```sh
+    kubectl -n istio-system describe secret istio-ingressgateway-certs
+    ```
+
+    The result of the command should be like this:
+
+    ```sh
+    Name:         istio-ingressgateway-certs
+    Namespace:    istio-system
+    Labels:       certmanager.k8s.io/certificate-name=istio-ingressgateway-certs
+    Annotations:  certmanager.k8s.io/alt-names=frontend-app.microservices.yyyyy.example.com
+                  certmanager.k8s.io/common-name=frontend-app.microservices.yyyyy.example.com
+                  certmanager.k8s.io/ip-sans=
+                  certmanager.k8s.io/issuer-kind=Issuer
+                  certmanager.k8s.io/issuer-name=letsencrypt
+
+    Type:  kubernetes.io/tls
+
+    Data
+    ====
+    ca.crt:   0 bytes
+    tls.crt:  3656 bytes
+    tls.key:  1675 bytes
+    ```
+
+    Please note that the value of the annotation *certmanager.k8s.io/issuer-name* is changed to *letsencrypt*.
+
+    After all, you can access to the website with HTTPS on your browser with your domain. For example, https://frontend-app.microservices.yyyyy.example.com/. However, there is a mixed-content problem because the front-end web application requests to the back-end web API application with HTTPS. To solve it, you can also add a back-end web API application domain to the certificate like [this official reference](https://docs.cert-manager.io/en/latest/reference/certificates.html), and update the environment variable in the front-end application like we did in [this step](#step-2-4---update-the-front-end-application). Moreover, you can [configure Gateway to redirect from HTTP to HTTPS](https://istio.io/docs/reference/config/networking/v1alpha3/gateway/) if you want.
+
+    ![images/https_browser_warning_valid_cert.png](images/https_browser_warning_valid_cert.png)
+
+Now, you completed to serve your website with HTTPS on the Kubernetes cluster with Istio!
+
+
 ## Cleanup
 
 After all, cleanup resources.
@@ -2650,21 +3138,31 @@ After all, cleanup resources.
 ```sh
 cd ../../../  # It should be /<path>/<to>/<your>/<working>/<directory>/<repsitory-root>
 
+# Cleanup cert-manager
+kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/v0.8.1/cert-manager.yaml
+kubectl delete namespace cert-manager
+kubectl get all -n cert-manager
+
 # Cleanup Istio service mesh
 helm template infrastructure/istio/istio-1.2.2/install/kubernetes/helm/istio --name istio --namespace istio-system | kubectl delete -f -
 kubectl delete namespace istio-system
-kubectl get namespace
 kubectl get all -n istio-system
 
 # Cleanup the resources on the Kubernetes cluster
+kubectl delete -f infrastructure/kubernets/security/istio-certmanager-certificate.yml
+kubectl delete -f infrastructure/kubernets/security/istio-certmanager-issuer.yml
+kubectl delete -f infrastructure/kubernets/network/istio-mtls.yml
+kubectl delete -f infrastructure/kubernets/network/istio-gateway.yml
+kubectl delete -f infrastructure/kubernets/network/istio-virtualservice.yml
 kubectl delete -f infrastructure/kubernetes/front/frontend-app-deployment.yml
 kubectl delete -f infrastructure/kubernetes/back/backend-app-deployment.yml
 kubectl delete -f infrastructure/kubernetes/database/database-app-deployment.yml
 kubectl delete -f infrastructure/kubernetes/database/mysql/mysql-db-deployment.yml
 kubectl delete -f infrastructure/kubernetes/database/mysql/mysql-db-secret.yml
 kubectl get all
+kubectl get namespace
 
-# Cleanup the resources on the Alibaba Cloud
+# Cleanup the resources on the Alibaba Cloud. In fact, only this command is necessary
 cd infrastructure/terraform/
 terraform destroy -auto-approve
 ```
