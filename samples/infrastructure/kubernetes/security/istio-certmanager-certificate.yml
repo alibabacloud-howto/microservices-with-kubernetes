@@ -1,0 +1,19 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: istio-ingressgateway-certs
+  namespace: istio-system
+spec:
+  secretName: istio-ingressgateway-certs  # MUST be this name to mount it to the istio-ingressgateway Pod automatically
+  issuerRef:
+    name: letsencrypt  # letsencrypt, letsencrypt-staging
+    kind: Issuer
+  commonName: frontend-app.microservices.yyyyy.example.com
+  dnsNames:
+  - frontend-app.microservices.yyyyy.example.com
+  acme:
+    config:
+    - http01:
+        ingressClass: istio
+      domains:
+      - frontend-app.microservices.yyyyy.example.com
