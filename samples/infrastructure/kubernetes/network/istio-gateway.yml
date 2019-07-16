@@ -32,4 +32,4 @@ spec:
       privateKey: /etc/istio/ingressgateway-certs/tls.key
       serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
     hosts:
-    - "frontend-app.microservices.yyyyy.example.com"
+    - "*.example.com"

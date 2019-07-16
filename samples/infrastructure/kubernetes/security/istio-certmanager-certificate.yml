@@ -8,12 +8,14 @@ spec:
   issuerRef:
     name: letsencrypt  # letsencrypt, letsencrypt-staging
     kind: Issuer
-  commonName: frontend-app.microservices.yyyyy.example.com
+  # commonName: frontend-app.microservices.yyyyy.example.com
   dnsNames:
+  - backend-app.microservices.yyyyy.example.com
   - frontend-app.microservices.yyyyy.example.com
   acme:
     config:
     - http01:
         ingressClass: istio
       domains:
+      - backend-app.microservices.yyyyy.example.com
       - frontend-app.microservices.yyyyy.example.com
