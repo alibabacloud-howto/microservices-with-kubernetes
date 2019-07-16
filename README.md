@@ -612,66 +612,66 @@ This tutorial was checked with the following enviroinment:
         ![images/frontend_app_deployment_pod.png](images/frontend_app_deployment_pod.png)
 
 
-4. Make the front-end application public with Service
+    4. Make the front-end application public with Service
 
-      We deployed the application container to the cluster, but we still cannot access to the Pod yet because we haven't configured the network. So, let's add a [Service](https://kubernetes.io/docs/concepts/services-networking/service/), which defines the network in the cluster, to make the Pod public.
+        We deployed the application container to the cluster, but we still cannot access to the Pod yet because we haven't configured the network. So, let's add a [Service](https://kubernetes.io/docs/concepts/services-networking/service/), which defines the network in the cluster, to make the Pod public.
 
-      Add the Service configuration related to the created Deployment configuration as follows. Please note that keepling the `image` property to yours accordingly.
+        Add the Service configuration related to the created Deployment configuration as follows. Please note that keepling the `image` property to yours accordingly.
 
-      `frontend-app-deployment.yml`
-      ```yml
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: frontend-app-svc
-        labels:
-          app: frontend-app-svc
-      spec:
-        type: LoadBalancer
-        ports:
-        - port: 80
-          targetPort: 80
-          protocol: TCP
-        selector:
-          app: frontend-app
-      ---
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: frontend-app-deployment
-      spec:
-        selector:
-          matchLabels:
+        `frontend-app-deployment.yml`
+        ```yml
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: frontend-app-svc
+          labels:
+            app: frontend-app-svc
+        spec:
+          type: LoadBalancer
+          ports:
+          - port: 80
+            targetPort: 80
+            protocol: TCP
+          selector:
             app: frontend-app
-        replicas: 1
-        template:
-          metadata:
-            labels:
+        ---
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: frontend-app-deployment
+        spec:
+          selector:
+            matchLabels:
               app: frontend-app
-          spec:
-            containers:
-            - name: frontend-app
-              image: registry.ap-northeast-1.aliyuncs.com/yyyyy/howto-microservices-frontend-app:1.0.0
-              imagePullPolicy: Always
-              ports:
-              - containerPort: 80
-      ```
+          replicas: 1
+          template:
+            metadata:
+              labels:
+                app: frontend-app
+            spec:
+              containers:
+              - name: frontend-app
+                image: registry.ap-northeast-1.aliyuncs.com/yyyyy/howto-microservices-frontend-app:1.0.0
+                imagePullPolicy: Always
+                ports:
+                - containerPort: 80
+        ```
 
-      It describes we require a Service with the type of load balancer in front of the Pod of the front-end web application container, and require load balancer with port-forwarding for port 80.
+        It describes we require a Service with the type of load balancer in front of the Pod of the front-end web application container, and require load balancer with port-forwarding for port 80.
 
-      Then, apply it and verify the resources on the cluster again with the following commands:
+        Then, apply it and verify the resources on the cluster again with the following commands:
 
-      ```sh
-      kubectl apply -f frontend-app-deployment.yml
-      kubectl get pod
-      kubectl get service
-      ```
+        ```sh
+        kubectl apply -f frontend-app-deployment.yml
+        kubectl get pod
+        kubectl get service
+        ```
 
-      As you can see, a Service is added on the cluster. The *TYPE* of the Service is *LoadBalancer*, and it has an *EXTERNAL-IP*. You can access to the website of the front-end web application on your browser with the IP address. Please note that it may take a few seconds to get the *EXTERNAL-IP*.
+        As you can see, a Service is added on the cluster. The *TYPE* of the Service is *LoadBalancer*, and it has an *EXTERNAL-IP*. You can access to the website of the front-end web application on your browser with the IP address. Please note that it may take a few seconds to get the *EXTERNAL-IP*.
 
-      ![images/frontend_app_deployment_service.png](images/frontend_app_deployment_service.png)
+        ![images/frontend_app_deployment_service.png](images/frontend_app_deployment_service.png)
 
-      As Service with *LoadBalancer* type [uses cloud provider's load balancer](https://kubernetes.io/docs/concepts/services-networking/#publishing-services-service-types), in Alibaba Cloud Kubenetes, the reality of the load balancer is [Server Load Balancer (SLB)](https://www.alibabacloud.com/help/doc-detail/27539.htm), which is a load balancing service in Alibaba Cloud. You can see the SLB created automatically in the [SLB web console](https://slb.console.aliyun.com/slb/).
+        As Service with *LoadBalancer* type [uses cloud provider's load balancer](https://kubernetes.io/docs/concepts/services-networking/#publishing-services-service-types), in Alibaba Cloud Kubenetes, the reality of the load balancer is [Server Load Balancer (SLB)](https://www.alibabacloud.com/help/doc-detail/27539.htm), which is a load balancing service in Alibaba Cloud. You can see the SLB created automatically in the [SLB web console](https://slb.console.aliyun.com/slb/).
 
 5. Make the front-end application public with Ingress
 
@@ -3056,13 +3056,13 @@ This tutorial was checked with the following enviriongment:
     kubectl apply -f network/istio-virtualservice.yml
     ```
 
-    After it finished, you can access to the website with HTTPS on your browser with your domain. For example, https://frontend-app.microservices.yyyyy.example.com/. You should see a warning because we used the Issuer of Let's Encrypt for stating.
+    After it finished, you can access to the website with HTTPS on your browser with your domain. For example, https://frontend-app.microservices.yyyyy.example.com/. If you can see the website, the website works with HTTPS! However, you should see a warning because we used the Issuer of Let's Encrypt for stating.
 
     ![images/https_browser_warning_fake_cert.png](images/https_browser_warning_fake_cert.png)
 
 5. Change the certificate for production
 
-    We confirmed that the configurations work and we can access to the website with HTTPS. Let's update the certifacation for production.
+    We confirmed that the configuration about the certificate was correct and we can access to the website with HTTPS. Let's update the certificate for production.
 
     First, delete the temporary certificate for staging.
 
@@ -3070,7 +3070,7 @@ This tutorial was checked with the following enviriongment:
     kubectl -n istio-system delete secret istio-ingressgateway-certs
     ```
 
-    Second, change the Certification configuration as follows to get a certification for production:
+    Second, change the Certificate configuration as follows to get a new certification for production:
 
     `security/istio-certmanager-certificate.yml`
     ```yml
@@ -3078,22 +3078,10 @@ This tutorial was checked with the following enviriongment:
     kind: Certificate
     metadata:
       name: istio-ingressgateway-certs
-      namespace: istio-system
-    spec:
-      secretName: istio-ingressgateway-certs  # MUST be this name to mount it to the istio-ingressgateway Pod automatically
+    ...
       issuerRef:
         name: letsencrypt  # letsencrypt, letsencrypt-staging
-        kind: Issuer
-      dnsNames:
-      - frontend-app.microservices.yyyyy.example.com
-      - backend-app.microservices.yyyyy.example.com
-      acme:
-        config:
-        - http01:
-            ingressClass: istio
-          domains:
-          - frontend-app.microservices.yyyyy.example.com
-          - backend-app.microservices.yyyyy.example.com
+    ...
     ```
 
     Then, apply it.
@@ -3154,7 +3142,18 @@ This tutorial was checked with the following enviriongment:
 
     Please note that the value of the annotation certmanager&#46;k8s&#46;io/issuer-name is changed to *letsencrypt*.
 
-    After all, you can access to the website with HTTPS on your browser with your domain. For example, https://frontend-app.microservices.yyyyy.example.com/. If you can see the website, it works with HTTPS!
+    After all, you can access to the website with HTTPS on your browser with your domain. For example, https://frontend-app.microservices.yyyyy.example.com/. Please note that the *istio-ingressgateway* Pod in Istio may [use the cache of previous certificate](https://github.com/istio/istio/issues/7479) and the new certificate won't be affected. If so, because we don't have previlidge to remount, please delete the Pod and make Isito to create new one.
+
+    ```sh
+    # Check the mount is not updated
+    kubectl exec -it -n istio-system $(kubectl -n istio-system get pods -l istio=ingressgateway -o jsonpath='{.items[0].metadata.name}') -- ls -al /etc/istio/ingressgateway-certs
+
+    # Delete the Pod to make Istio create new one
+    kubectl -n istio-system delete pod $(kubectl -n istio-system get pods -l istio=ingressgateway -o jsonpath='{.items[0].metadata.name}')
+
+    # Verify the mount is updated
+    kubectl exec -it -n istio-system $(kubectl -n istio-system get pods -l istio=ingressgateway -o jsonpath='{.items[0].metadata.name}') -- ls -al /etc/istio/ingressgateway-certs
+    ```
 
     ![images/https_browser_valid_cert_mixed_content.png](images/https_browser_valid_cert_mixed_content.png)
 
@@ -3199,7 +3198,6 @@ This tutorial was checked with the following enviriongment:
 
     ```sh
     cd ../../  # It should be /<path>/<to>/<your>/<working>/<directory>/<repsitory-root>
-
     cd infrastructure/kubernetes/front/
     ```
 
