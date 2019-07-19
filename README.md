@@ -61,8 +61,6 @@ Before starting this tutorial, you need to prepare the following things.
 
 We will use Terraform in this tutorial to construct the cloud envirionment, mainly for the Kubernetes cluster. It is a powerful tool of Infrastructure as code made by HashCorp. It can automate constructing cloud infrastructure and enables us to create cloud resources effectively. Also, it enables us to manage the cloud infrastructure with files. Terraform configuration files contain the information of cloud resources and the architecture, and Terraform saves the state of cloud resources in files after it applys changes. You can install it from the [official site](https://www.terraform.io/downloads.html).
 
-**NOTE**: No available provider "alicloud" plugins are compatible with the Terraform version 0.12.x yet. Please install **0.11.x** version. (Jun. 27, 2019)
-
 You can check that you have Terraform with the following command:
 
 ```sh
@@ -92,7 +90,7 @@ kubectl version
 This tutorial was checked with the following enviroinment:
 
 * macOS High Sierra: 10.13.4
-* Terraform: 0.11.14 (with plugin for provider "alicloud" (1.51.0))
+* Terraform: 0.11.14 (with plugin for provider "alicloud" (1.52.0)) (**UPDATED** The guide for the Terraform script also checked with v0.12.x)
 * Docker Desktop community: 2.0.0.3
 * Kubernetes: v1.10.11(Client), v1.11.5(Server)
 
@@ -1808,7 +1806,7 @@ In this tutorial, we don't configure Cluster Autoscaler. If you are interested i
 
 ## Step 4-1 - Integrate Istio to the Kubernetes cluster
 
-Microservices architecture gives merits to the independent distributed application services especially in the development and scaling aspects. On the other hand, microservices gives some demierits as it grows, such as management of the complex network, security for the services, difficulty of observing multiple applications, or etc. To solve these problems, service mesh is an effectivce method. And, [Istio](https://istio.io/) is a popular service mesh for Kubernetes.
+Microservices architecture gives merits to the independent distributed application services especially in the development and scaling aspects. On the other hand, microservices gives some demierits as it grows, such as management of the complex network, security for the services, difficulty of observing multiple applications, or etc. To solve these problems, service mesh is an effectivce method. And, [Istio](https://istio.io/) is a popular service mesh for Kubernetes. If you are not familar with Istio, it's better to see the awesome official document about its [concept](https://istio.io/docs/concepts/what-is-istio/) and [architecture](https://istio.io/docs/concepts/what-is-istio/#architecture) first.
 
 In this step, this tutorial will show how to integrate Istio to the Kubernetes cluster.
 
