@@ -1,4 +1,4 @@
-# How-to create a microservice with Kubernetes on Alibaba Cloud
+# How to create a microservice with Kubernetes on Alibaba Cloud
 
 ## Summary
 
