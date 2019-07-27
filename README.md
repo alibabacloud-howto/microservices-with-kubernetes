@@ -134,7 +134,7 @@ In this step, we will create a [Virtual Private Cloud (VPC)](https://www.alibaba
     secret_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     # Region in Alibaba Cloud
     region = "ap-northeast-1"
-    # The SSH key name of the Alibaba Cloud ECS
+    # The SSH key name of the Alibaba Cloud Kubernetes
     ssh_key_name = "ssh-microservices-k8s-tf"
     # The file path of the SSH key which will be saved on local
     ssh_key_local_path = "./ssh-microservices-k8s-tf.pem"
@@ -1789,7 +1789,7 @@ In this step, we configure the [Horizontal Pod Autoscaler (HPA)](https://kuberne
 
     ![images/backend_app_hpa_scaledown_before.png](images/backend_app_hpa_scaledown_before.png)
 
-    About 5 minitues later, the autoscaler performs a downscale operation because the avarage of the CPU usage is lower than 70%, which we specified. As a result, you can see the number of Pod for the back-end web API appliction changed to 1.
+    About 5 minutes later, the autoscaler performs a downscale operation because the avarage of the CPU usage is lower than 70%, which we specified. As a result, you can see the number of Pod for the back-end web API appliction changed to 1.
 
     ![images/backend_app_hpa_scaledown_after.png](images/backend_app_hpa_scaledown_after.png)
 
@@ -1801,7 +1801,7 @@ Now, you completed to configure an auto scaling for the back-end web API applica
 
 Alibaba Cloud provides a method to configure [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#cluster-autoscaler), which is one of the [Kubernetes Autoscaler](https://github.com/kubernetes/autoscaler#kubernetes-autoscaler) and it can adjust the cluster size by changing the amount of Node. In Alibaba Cloud Kubenetes, the reality of Node is ECS. You can see the ECS instance details from the [Kubernetes Node list web console page](https://cs.console.aliyun.com/#/k8s/node/list). Hence, The Cluster Autoscaler in Alibaba Cloud changes the amount of ECS like [Alibaba Cloud Auto Scaling](https://www.alibabacloud.com/help/doc-detail/25857.htm).
 
-In this tutorial, we don't configure Cluster Autoscaler. If you are interested in it, you can add a configuration by [following this document](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/alicloud). Currently, the way [ACS Console Deployment](https://www.alibabacloud.com/help/doc-detail/89733.htm) is recommended, which configure the Cluster Autoscaler from Alibaba Cloud web console.
+In this tutorial, we don't configure Cluster Autoscaler. If you are interested in it, you can add a configuration by [following this document](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler/cloudprovider/alicloud). Currently, the way [ACS Console Deployment](https://www.alibabacloud.com/help/doc-detail/89733.htm) is recommended, which configures the Cluster Autoscaler from Alibaba Cloud web console.
 
 
 ## Step 4-1 - Integrate Istio to the Kubernetes cluster
@@ -1905,7 +1905,7 @@ kubectl get pod -n istio-system
 
 Now, you completed to install Istio. Let's deploy the applications again, with Istio.
 
-### Deploy application
+### Deploy applications
 
 1. Configure mutual TLS
 
@@ -2008,7 +2008,7 @@ Now, you completed to install Istio. Let's deploy the applications again, with I
     and deploy other applications in the same way.
 
     ```sh
-    # Deploy application
+    # Deploy applications
     kubectl apply -f back/backend-app-deployment.yml
     kubectl apply -f database/database-app-deployment.yml
 
@@ -2673,7 +2673,7 @@ There are multiple ways to achieve HTTPS provided by Istio. For example, [mounti
 
 [Cert-manager](https://docs.cert-manager.io/en/latest/index.html) is a native Kubernetes certificate management controller, which can issue certificates of some CA, such as Let's Encrypt. And, [Let’s Encrypt](https://letsencrypt.org/) is a free, automated, and open Certificate Authority. Let’s Encrypt provides two [challenge types](https://letsencrypt.org/docs/challenge-types/) to get a certificate, HTTP-01 challenge and DNS-01 challenge. In this tutorial, we use HTTP-01 challenge which is the most common challenge type today. Alibaba Cloud is not supported for [DNS-01 challenge through cert-manager](https://docs.cert-manager.io/en/latest/tasks/issuers/setup-acme/dns01/#id1) currently. Please note that Let's Encrypt has [rate limit](https://letsencrypt.org/docs/rate-limits/) to issue certificates, hence we shouldn't issue new certificate if not necessary.
 
-This tutorial was checked with the following enviriongment:
+This tutorial was checked with the following environment:
 
 * Cert-manager-controller: v0.8.1
 
@@ -2792,7 +2792,7 @@ This tutorial was checked with the following enviriongment:
 
 3. Issue a certificate
 
-    We have created an Issuer to issue a certificate. However, before issuing a certificate with Issuer which we created in the previous step, we need to create a special ingress gateway to allow HTTP requests for the HTTP-01 challenge.
+    We have created an Issuer to issue a certificate. However, before issuing a certificate with Issuer, we need to create a special ingress gateway to allow HTTP requests for the HTTP-01 challenge.
 
     Change the Gateway configuration file as follows:
 
@@ -2860,7 +2860,7 @@ This tutorial was checked with the following enviriongment:
 
     Please change the domain name in `dnsNames`, and `domains` property to yours accordingly. And, note that the *secretName* is *istio-ingressgateway-certs*.
 
-    It describes we use a Issuer for Let's Encrypt with staging type which we created in the previouse step as testing, and require a certificate with the specified domain.
+    It describes we use a Issuer for Let's Encrypt with staging type which we created in the previouse step as testing, and require a certificate with the specified domains.
 
     Finally, issue a certificate by applying the Certificate configuration.
 
