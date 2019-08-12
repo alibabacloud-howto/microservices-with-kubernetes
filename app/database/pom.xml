@@ -16,7 +16,7 @@
 
     <properties>
         <hibernate-validator.version>6.0.15.Final</hibernate-validator.version>
-        <jackson-databind.version>2.9.9</jackson-databind.version>
+        <jackson-databind.version>[2.9.9.2,)</jackson-databind.version>
         <jackson-annotation.version>2.9.9</jackson-annotation.version>
     </properties>
 
